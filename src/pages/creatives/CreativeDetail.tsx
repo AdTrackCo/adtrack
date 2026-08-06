@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { ArrowLeft, Copy, Pencil, Sparkles, PlayCircle, Send } from 'lucide-react'
+import { ArrowLeft, Copy, Pencil, Sparkles, PlayCircle, Send, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/Input'
 import { Progress } from '@/components/ui/Progress'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import { formatCurrency } from '@/lib/utils'
-import { getComments, addComment, type Comment } from '@/lib/comments'
+import { getComments, addComment, updateComment, deleteComment, type Comment } from '@/lib/comments'
 import { useAuth } from '@/lib/AuthContext'
 import { useCreatives } from '@/lib/CreativesContext'
 import { EditCreativeDrawer } from '@/components/creatives/EditCreativeDrawer'
@@ -25,6 +25,9 @@ export function CreativeDetail() {
   const [comments, setComments] = useState<Comment[]>([])
   const [commentText, setCommentText] = useState('')
   const [editOpen, setEditOpen] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editingText, setEditingText] = useState('')
+  const [savingComment, setSavingComment] = useState(false)
 
   useEffect(() => {
     if (!creative) return
@@ -52,6 +55,38 @@ export function CreativeDetail() {
       setCommentText('')
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Could not post comment.')
+    }
+  }
+
+  function cancelEdit() {
+    setEditingId(null)
+    setEditingText('')
+  }
+
+  async function saveCommentEdit(id: string) {
+    const body = editingText.trim()
+    if (!body) return
+    setSavingComment(true)
+    try {
+      const updated = await updateComment(creative.id, id, body)
+      setComments((prev) => prev.map((c) => (c.id === id ? { ...updated, isMine: true } : c)))
+      cancelEdit()
+      toast.success('Comment updated ✓')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not update comment.')
+    } finally {
+      setSavingComment(false)
+    }
+  }
+
+  async function removeComment(id: string) {
+    if (!window.confirm('Delete this comment? This cannot be undone.')) return
+    try {
+      await deleteComment(creative.id, id)
+      setComments((prev) => prev.filter((c) => c.id !== id))
+      toast.success('Comment deleted ✓')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not delete comment.')
     }
   }
 
@@ -157,16 +192,72 @@ export function CreativeDetail() {
               <div className="space-y-4">
                 {comments.length === 0 && <p className="text-xs text-[var(--color-text-secondary)]">No comments yet.</p>}
                 {comments.map((c) => (
-                  <div key={c.id} className="flex gap-2.5">
+                  <div key={c.id} className="flex gap-2.5 group">
                     <div className="h-7 w-7 rounded-full bg-[var(--color-violet)]/15 text-[var(--color-violet)] text-[11px] flex items-center justify-center shrink-0 mono">
                       {c.authorName.slice(0, 2).toUpperCase()}
                     </div>
-                    <div>
-                      <p className="text-xs">
-                        <span className="font-medium">{c.authorName}</span>{' '}
-                        <span className="text-[var(--color-text-secondary)]">{new Date(c.createdAt).toLocaleString()}</span>
-                      </p>
-                      <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">{c.body}</p>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="text-xs">
+                          <span className="font-medium">{c.authorName}</span>{' '}
+                          <span className="text-[var(--color-text-secondary)]">
+                            {new Date(c.createdAt).toLocaleString()}
+                          </span>
+                          {c.editedAt && (
+                            <span className="text-[var(--color-text-secondary)]/70 italic"> (edited)</span>
+                          )}
+                        </p>
+
+                        {c.isMine && editingId !== c.id && (
+                          <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-base">
+                            <button
+                              aria-label="Edit comment"
+                              onClick={() => {
+                                setEditingId(c.id)
+                                setEditingText(c.body)
+                              }}
+                              className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+                            >
+                              <Pencil size={12} />
+                            </button>
+                            <button
+                              aria-label="Delete comment"
+                              onClick={() => void removeComment(c.id)}
+                              className="text-[var(--color-text-secondary)] hover:text-[var(--color-danger)]"
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
+                      {editingId === c.id ? (
+                        <div className="mt-1.5">
+                          <Textarea
+                            rows={2}
+                            value={editingText}
+                            onChange={(e) => setEditingText(e.target.value)}
+                            autoFocus
+                          />
+                          <div className="flex items-center gap-2 mt-2">
+                            <Button
+                              variant="primary"
+                              size="sm"
+                              onClick={() => void saveCommentEdit(c.id)}
+                              disabled={savingComment || !editingText.trim()}
+                            >
+                              {savingComment ? 'Saving…' : 'Save'}
+                            </Button>
+                            <Button variant="ghost" size="sm" onClick={cancelEdit} disabled={savingComment}>
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-xs text-[var(--color-text-secondary)] mt-0.5 whitespace-pre-wrap break-words">
+                          {c.body}
+                        </p>
+                      )}
                     </div>
                   </div>
                 ))}

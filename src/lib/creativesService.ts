@@ -305,6 +305,29 @@ export async function updateCreativeSet(id: string, name: string, fields: Editab
   return updated
 }
 
+/**
+ * Replaces the stored file on a single size variant. The old object is left in
+ * storage rather than deleted — other variants (or a duplicated creative set)
+ * may still be pointing at the same URL.
+ */
+export async function replaceVariantAsset(variantId: string, file: File): Promise<string> {
+  if (!isSupabaseConfigured) throw new Error('Supabase is not configured.')
+
+  const { data: userData, error: userError } = await supabase.auth.getUser()
+  if (userError || !userData.user) throw new Error('You must be signed in to change an asset.')
+
+  const assetUrl = await uploadAsset(userData.user.id, file)
+  const assetType: 'image' | 'video' = file.type.startsWith('video') ? 'video' : 'image'
+
+  const { error } = await supabase
+    .from('creative_variants')
+    .update({ asset_url: assetUrl, asset_type: assetType })
+    .eq('id', variantId)
+
+  if (error) throw new Error(`Asset uploaded but the creative could not be updated: ${error.message}`)
+  return assetUrl
+}
+
 export async function deleteCreativeSet(id: string): Promise<void> {
   const { error } = await supabase.from('creative_sets').delete().eq('id', id)
   if (error) throw new Error(error.message)

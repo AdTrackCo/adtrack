@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import { Copy, Loader2 } from 'lucide-react'
+import { Copy, Loader2, Upload, Image as ImageIcon } from 'lucide-react'
 import { Drawer } from '@/components/ui/Drawer'
 import { Button } from '@/components/ui/Button'
 import { Input, Label, Select, Textarea } from '@/components/ui/Input'
 import { platforms, angles, hooks, stages } from '@/lib/mockData'
-import { updateCreativeSet } from '@/lib/creativesService'
+import { updateCreativeSet, replaceVariantAsset } from '@/lib/creativesService'
 import { useCreatives } from '@/lib/CreativesContext'
 import type { CreativeSet, Platform } from '@/types'
 
@@ -21,6 +21,7 @@ export function EditCreativeDrawer({
 }) {
   const { refresh } = useCreatives()
   const [saving, setSaving] = useState(false)
+  const [replacingId, setReplacingId] = useState<string | null>(null)
 
   const [platform, setPlatform] = useState<Platform>('Meta')
   const [format, setFormat] = useState('Image')
@@ -64,6 +65,19 @@ export function EditCreativeDrawer({
   // date, so editing metadata doesn't rewrite when it was actually created.
   const originalDatePrefix = creative.name.split('_')[0] || dateStr
   const generatedName = `${originalDatePrefix}_${platform.toUpperCase()}_${stage}_${angle.replace(/\s/g, '')}_${hookType}_v${version}`
+
+  async function handleReplaceAsset(variantId: string, file: File) {
+    setReplacingId(variantId)
+    try {
+      await replaceVariantAsset(variantId, file)
+      await refresh()
+      toast.success('Asset replaced ✓')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not replace the asset.', { duration: 8000 })
+    } finally {
+      setReplacingId(null)
+    }
+  }
 
   async function handleSave() {
     if (!creative) return
@@ -118,10 +132,73 @@ export function EditCreativeDrawer({
       }
     >
       <div className="p-6 space-y-8">
-        <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-elevated)] p-3 text-[11px] text-[var(--color-text-secondary)]">
-          Editing details for this creative. Size variants and the uploaded asset can't be changed here yet — delete and
-          re-upload if you need to swap images.
-        </div>
+        <section>
+          <h4 className="text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wide mb-3">Assets</h4>
+          {creative.variants.length === 0 ? (
+            <p className="text-[11px] text-[var(--color-text-secondary)]">
+              This creative has no size variants, so there's no asset to replace.
+            </p>
+          ) : (
+            <>
+              <p className="text-[11px] text-[var(--color-text-secondary)] mb-3">
+                Replace the file on any size. Uploads save immediately — you don't need to hit Save Changes for these.
+                Adding or removing sizes still requires a re-upload.
+              </p>
+              <div className="space-y-2">
+                {creative.variants.map((v) => (
+                  <div
+                    key={v.id}
+                    className="flex items-center gap-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-elevated)] p-2.5"
+                  >
+                    <div className="h-11 w-11 rounded-md bg-[var(--color-surface)] overflow-hidden shrink-0 flex items-center justify-center">
+                      {v.assetUrl && v.assetType === 'image' ? (
+                        <img src={v.assetUrl} alt="" className="h-full w-full object-cover" />
+                      ) : (
+                        <ImageIcon size={14} className="text-[var(--color-text-secondary)]/50" />
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="mono text-[11px]">
+                        {v.width} × {v.height}
+                      </p>
+                      <p className="text-[10px] text-[var(--color-text-secondary)] truncate">{v.placementLabel}</p>
+                    </div>
+                    <label className="shrink-0">
+                      <input
+                        type="file"
+                        accept="image/*,video/*"
+                        className="hidden"
+                        disabled={replacingId !== null}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0]
+                          e.target.value = '' // let the same file be picked again after an error
+                          if (file) void handleReplaceAsset(v.id, file)
+                        }}
+                      />
+                      <span
+                        className={`inline-flex items-center gap-1.5 h-8 px-3 text-xs rounded-lg border border-[var(--color-border)] transition-base ${
+                          replacingId !== null
+                            ? 'opacity-40 pointer-events-none'
+                            : 'cursor-pointer hover:border-[var(--color-violet)]'
+                        }`}
+                      >
+                        {replacingId === v.id ? (
+                          <>
+                            <Loader2 size={12} className="animate-spin" /> Uploading…
+                          </>
+                        ) : (
+                          <>
+                            <Upload size={12} /> Replace
+                          </>
+                        )}
+                      </span>
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </section>
 
         <section>
           <h4 className="text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wide mb-3">Creative Details</h4>

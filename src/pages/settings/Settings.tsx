@@ -4,7 +4,7 @@ import { toast } from 'sonner'
 import { RefreshCw, Plus, Loader2 } from 'lucide-react'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Card } from '@/components/ui/Card'
-import { Input, Label, Select } from '@/components/ui/Input'
+import { Input, Label, Select, Textarea } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { useAuth } from '@/lib/AuthContext'
@@ -18,6 +18,7 @@ import {
   type MetricsPreference,
   type NotificationSettings,
 } from '@/lib/preferencesService'
+import { listBrands, createBrand, updateBrand, deleteBrand, type Brand, type BrandInput } from '@/lib/brandsService'
 import { cn } from '@/lib/utils'
 
 const tabs = ['Profile', 'Team', 'Notifications', 'Integrations', 'Brand Profiles', 'Billing'] as const
@@ -355,19 +356,214 @@ function IntegrationsTab() {
   )
 }
 
+const emptyBrandForm: BrandInput = { name: '', color: '#7C5CFC', voiceGuidelines: '' }
+
 function BrandProfilesTab() {
+  const [brands, setBrands] = useState<Brand[]>([])
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [form, setForm] = useState<BrandInput>(emptyBrandForm)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [formOpen, setFormOpen] = useState(false)
+  const [saving, setSaving] = useState(false)
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    try {
+      setBrands(await listBrands())
+      setLoadError(null)
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : 'Could not load brand profiles.')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    void load()
+  }, [load])
+
+  function startCreate() {
+    setEditingId(null)
+    setForm(emptyBrandForm)
+    setFormOpen(true)
+  }
+
+  function startEdit(brand: Brand) {
+    setEditingId(brand.id)
+    setForm({
+      name: brand.name,
+      color: brand.color || '#7C5CFC',
+      voiceGuidelines: brand.voiceGuidelines || '',
+    })
+    setFormOpen(true)
+  }
+
+  function closeForm() {
+    setFormOpen(false)
+    setEditingId(null)
+    setForm(emptyBrandForm)
+  }
+
+  async function handleSave() {
+    if (!form.name.trim()) {
+      toast.error('Give the brand a name first.')
+      return
+    }
+    setSaving(true)
+    try {
+      if (editingId) {
+        await updateBrand(editingId, { ...form, name: form.name.trim() })
+        toast.success('Brand updated ✓')
+      } else {
+        await createBrand({ ...form, name: form.name.trim() })
+        toast.success('Brand added ✓')
+      }
+      await load()
+      closeForm()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not save the brand.', { duration: 8000 })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function handleDelete(brand: Brand) {
+    if (!window.confirm(`Delete "${brand.name}"? This cannot be undone.`)) return
+    try {
+      await deleteBrand(brand.id)
+      await load()
+      toast.success('Brand deleted ✓')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not delete the brand.')
+    }
+  }
+
   return (
-    <div className="max-w-2xl">
-      <Card className="p-8 text-center">
-        <p className="text-sm font-medium mb-1">No brand profiles yet</p>
-        <p className="text-xs text-[var(--color-text-secondary)] mb-4 max-w-sm mx-auto">
-          Multi-brand support needs a <span className="mono">brands</span> table wired up (the schema already exists in
-          the migration) — this is UI-only until that's connected.
+    <div className="max-w-2xl space-y-4">
+      <div className="rounded-lg border border-[var(--color-violet)]/30 bg-[var(--color-violet)]/5 px-4 py-3">
+        <p className="text-[11px] text-[var(--color-text-secondary)]">
+          Brand profiles save to your account for real. They aren't attached to creatives or used for compliance
+          scoring yet — that comes when the compliance engine is built.
         </p>
-        <Button variant="outline" size="sm" onClick={() => toast('Brand profiles aren\'t wired to the database yet.')}>
-          <Plus size={13} /> Add Brand Profile
-        </Button>
-      </Card>
+      </div>
+
+      {loadError && (
+        <div className="rounded-lg border border-[var(--color-danger)]/40 bg-[var(--color-danger)]/5 px-4 py-3">
+          <p className="text-[11px] text-[var(--color-danger)]">{loadError}</p>
+        </div>
+      )}
+
+      {formOpen && (
+        <Card className="p-5 space-y-3">
+          <p className="text-sm font-medium">{editingId ? 'Edit Brand' : 'New Brand'}</p>
+          <div>
+            <Label>Brand Name</Label>
+            <Input
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              placeholder="e.g. Orenza Wellness"
+              autoFocus
+            />
+          </div>
+          <div>
+            <Label>Brand Color</Label>
+            <div className="flex items-center gap-2">
+              <input
+                type="color"
+                value={form.color}
+                onChange={(e) => setForm({ ...form, color: e.target.value })}
+                className="h-9 w-14 rounded-lg border border-[var(--color-border)] bg-transparent cursor-pointer"
+              />
+              <Input
+                value={form.color}
+                onChange={(e) => setForm({ ...form, color: e.target.value })}
+                className="mono"
+              />
+            </div>
+          </div>
+          <div>
+            <Label>Voice Guidelines</Label>
+            <Textarea
+              rows={3}
+              value={form.voiceGuidelines}
+              onChange={(e) => setForm({ ...form, voiceGuidelines: e.target.value })}
+              placeholder="Tone, words to avoid, claims that need legal review…"
+            />
+          </div>
+          <div className="flex items-center gap-2 pt-1">
+            <Button variant="primary" size="sm" onClick={() => void handleSave()} disabled={saving}>
+              {saving ? (
+                <>
+                  <Loader2 size={13} className="animate-spin" /> Saving…
+                </>
+              ) : editingId ? (
+                'Save Changes'
+              ) : (
+                'Add Brand'
+              )}
+            </Button>
+            <Button variant="ghost" size="sm" onClick={closeForm} disabled={saving}>
+              Cancel
+            </Button>
+          </div>
+        </Card>
+      )}
+
+      {loading ? (
+        <Card className="p-8 flex items-center justify-center gap-2 text-xs text-[var(--color-text-secondary)]">
+          <Loader2 size={14} className="animate-spin" /> Loading brand profiles…
+        </Card>
+      ) : brands.length === 0 ? (
+        <Card className="p-8 text-center">
+          <p className="text-sm font-medium mb-1">No brand profiles yet</p>
+          <p className="text-xs text-[var(--color-text-secondary)] mb-4 max-w-sm mx-auto">
+            Add a brand to store its color and voice guidelines in one place.
+          </p>
+          {!formOpen && (
+            <Button variant="outline" size="sm" onClick={startCreate}>
+              <Plus size={13} /> Add Brand Profile
+            </Button>
+          )}
+        </Card>
+      ) : (
+        <>
+          <Card className="divide-y divide-[var(--color-border)]">
+            {brands.map((b) => (
+              <div key={b.id} className="flex items-start justify-between gap-3 px-5 py-3.5">
+                <div className="flex items-start gap-3 min-w-0">
+                  <span
+                    className="h-8 w-8 rounded-md shrink-0 border border-[var(--color-border)]"
+                    style={{ background: b.color || 'transparent' }}
+                  />
+                  <div className="min-w-0">
+                    <p className="text-sm">{b.name}</p>
+                    {b.color && <p className="mono text-[10px] text-[var(--color-text-secondary)]">{b.color}</p>}
+                    {b.voiceGuidelines && (
+                      <p className="text-[11px] text-[var(--color-text-secondary)] mt-1 line-clamp-2">
+                        {b.voiceGuidelines}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <Button variant="ghost" size="sm" onClick={() => startEdit(b)}>
+                    Edit
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => void handleDelete(b)}>
+                    Delete
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </Card>
+          {!formOpen && (
+            <Button variant="outline" size="sm" onClick={startCreate}>
+              <Plus size={13} /> Add Brand Profile
+            </Button>
+          )}
+        </>
+      )}
     </div>
   )
 }
