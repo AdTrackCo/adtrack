@@ -7,12 +7,18 @@ import { CreativeLeaderboard } from '@/components/dashboard/CreativeLeaderboard'
 import { AlertsPanel } from '@/components/dashboard/AlertsPanel'
 import { QuickActions } from '@/components/dashboard/QuickActions'
 import { OnboardingBanner } from '@/components/dashboard/OnboardingBanner'
+import { SampleDataBanner } from '@/components/common/SampleDataBanner'
 
 export function Dashboard() {
   return (
     <div>
-      <PageHeader title="Dashboard" description="Your live command center." />
+      <PageHeader title="Dashboard" description="Your command center." />
       <OnboardingBanner />
+      <SampleDataBanner>
+        Spend, ROAS, impressions, CPA, the charts, and the alerts below are placeholder figures — not your account.
+        Real numbers appear once you connect an ad platform in Settings → Integrations. "Top Performing Creatives" is
+        the exception: it reads your real library.
+      </SampleDataBanner>
 
       <div className="p-6 md:p-8 space-y-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

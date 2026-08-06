@@ -4,6 +4,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Progress } from '@/components/ui/Progress'
+import { SampleDataBanner } from '@/components/common/SampleDataBanner'
 import { generateABTests } from '@/lib/mockData'
 
 const tests = generateABTests(8)
@@ -26,11 +27,16 @@ export function TestingLab() {
         title="Testing Lab"
         description="Every A/B test, tracked with statistical rigor."
         actions={
-          <Button variant="primary" size="sm">
+          <Button variant="primary" size="sm" disabled title="Requires real campaign data">
             <Plus size={13} /> New Test
           </Button>
         }
       />
+
+      <SampleDataBanner tone="warning">
+        Every test result and fatigue warning on this page is fabricated sample data, including the significance
+        percentages. No real statistical analysis is running. Creating tests needs a connected ad platform.
+      </SampleDataBanner>
 
       <div className="p-6 md:p-8 space-y-6">
         <Card>
@@ -48,7 +54,7 @@ export function TestingLab() {
                   <span className="mono text-[var(--color-danger)] flex items-center gap-1">
                     <TrendingDown size={12} /> CTR -{f.ctrDrop}%
                   </span>
-                  <Button variant="secondary" size="sm">
+                  <Button variant="secondary" size="sm" disabled title="Requires real performance data">
                     Refresh Recommendation
                   </Button>
                 </div>

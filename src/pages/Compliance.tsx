@@ -3,6 +3,7 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { PlatformBadge } from '@/components/common/PlatformBadge'
+import { SampleDataBanner } from '@/components/common/SampleDataBanner'
 
 const disapprovals = [
   { name: '20240705_META_BOFU_Urgency_StatHook_v1', platform: 'Meta' as const, reason: 'Personal Attributes Policy', link: 'https://www.facebook.com/policies/ads' },
@@ -20,6 +21,12 @@ export function Compliance() {
   return (
     <div>
       <PageHeader title="Compliance & Risk" description="Approval status, policy flags, and anomaly detection across platforms." />
+
+      <SampleDataBanner tone="warning">
+        None of these flags are real. The disapprovals, fraud indicators, and spend anomalies below are example content
+        for creatives that don't exist in your account. No ad platform is connected, so nothing here reflects your
+        actual approval status — check your ad manager directly for that.
+      </SampleDataBanner>
 
       <div className="p-6 md:p-8 space-y-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

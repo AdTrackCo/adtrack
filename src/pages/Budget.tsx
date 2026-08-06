@@ -4,6 +4,7 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { Input, Label } from '@/components/ui/Input'
 import { Progress } from '@/components/ui/Progress'
+import { SampleDataBanner } from '@/components/common/SampleDataBanner'
 import { formatCurrency } from '@/lib/utils'
 
 const budgetByCampaign = [
@@ -35,6 +36,11 @@ export function Budget() {
   return (
     <div>
       <PageHeader title="Budget & Financials" description="Planned vs actual spend, cost metrics, and true profit margin." />
+
+      <SampleDataBanner tone="warning">
+        Every figure on this page is placeholder data — the cost metrics, the budget chart, and the alert rules. Do not
+        use any of it for financial decisions. Real numbers require a connected ad platform.
+      </SampleDataBanner>
 
       <div className="p-6 md:p-8 space-y-6">
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
@@ -73,6 +79,13 @@ export function Budget() {
               <CardTitle>Profit Margin Calculator</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
+              <div className="rounded-lg border border-[var(--color-warning)]/30 bg-[var(--color-warning)]/5 px-3 py-2.5">
+                <p className="text-[11px] text-[var(--color-text-secondary)] leading-relaxed">
+                  This calculator uses placeholder revenue ({formatCurrency(revenue)}) and spend ({formatCurrency(spend)}
+                  ) figures, so the margin it returns is <span className="text-[var(--color-text-primary)]">not your
+                  real margin</span>. It becomes accurate once your platform data is syncing.
+                </p>
+              </div>
               <div>
                 <Label>COGS ($)</Label>
                 <Input value={cogs} onChange={(e) => setCogs(e.target.value)} placeholder="e.g. 95000" />
@@ -82,7 +95,9 @@ export function Budget() {
                 <Input value={refundRate} onChange={(e) => setRefundRate(e.target.value)} placeholder="e.g. 4" />
               </div>
               <div className="pt-2">
-                <p className="text-[10px] text-[var(--color-text-secondary)]">True Profit Margin</p>
+                <p className="text-[10px] text-[var(--color-text-secondary)]">
+                  True Profit Margin <span className="text-[var(--color-warning)]">(sample figures)</span>
+                </p>
                 <p className="mono text-xl text-[var(--color-violet)] font-medium">{margin ? `${margin}%` : '—'}</p>
               </div>
             </CardContent>

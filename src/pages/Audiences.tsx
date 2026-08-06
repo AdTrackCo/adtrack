@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { PlatformBadge } from '@/components/common/PlatformBadge'
+import { SampleDataBanner } from '@/components/common/SampleDataBanner'
 import { generateAudiences } from '@/lib/mockData'
 import { formatNumber } from '@/lib/utils'
 
@@ -22,11 +23,16 @@ export function Audiences() {
         title="Audiences"
         description="Every audience across every platform, ranked by performance."
         actions={
-          <Button variant="primary" size="sm">
+          <Button variant="primary" size="sm" disabled title="Requires a connected ad platform">
             <Plus size={13} /> New Audience
           </Button>
         }
       />
+
+      <SampleDataBanner>
+        These audiences are placeholders. Audience building writes directly to the ad platform, so it needs a real
+        connection in Settings → Integrations before it can work.
+      </SampleDataBanner>
 
       <div className="p-6 md:p-8">
         <div className="rounded-xl border border-[var(--color-border)] overflow-hidden">

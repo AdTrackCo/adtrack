@@ -5,6 +5,11 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Select } from '@/components/ui/Input'
+import { SampleDataBanner } from '@/components/common/SampleDataBanner'
+
+function notBuiltYet() {
+  toast('Report generation isn\'t built yet — nothing was created or exported.')
+}
 
 const templates = [
   'Weekly Creative Performance',
@@ -20,6 +25,11 @@ export function Reports() {
   return (
     <div>
       <PageHeader title="Reports" description="Build, schedule, and share client-ready reports." />
+
+      <SampleDataBanner>
+        Report generation isn't built yet — no file is produced and nothing is scheduled. The templates below are
+        placeholders showing what's planned. This needs real platform data before it can generate anything meaningful.
+      </SampleDataBanner>
 
       <div className="p-6 md:p-8 space-y-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -56,16 +66,16 @@ export function Reports() {
             </Select>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
-            <Button variant="primary" size="sm" onClick={() => toast.success('Report generated ✓')}>
+            <Button variant="primary" size="sm" onClick={notBuiltYet}>
               Generate Report
             </Button>
-            <Button variant="secondary" size="sm" onClick={() => toast.success('Exported as PDF ✓')}>
+            <Button variant="secondary" size="sm" onClick={notBuiltYet}>
               Export PDF
             </Button>
-            <Button variant="secondary" size="sm" onClick={() => toast.success('Exported as CSV ✓')}>
+            <Button variant="secondary" size="sm" onClick={notBuiltYet}>
               Export CSV
             </Button>
-            <Button variant="outline" size="sm" onClick={() => toast.success('Shareable link copied ✓')}>
+            <Button variant="outline" size="sm" onClick={notBuiltYet}>
               <Link2 size={13} /> Shareable Link
             </Button>
           </div>
@@ -75,17 +85,9 @@ export function Reports() {
           <p className="text-sm font-medium mb-3 flex items-center gap-2">
             <Calendar size={14} className="text-[var(--color-violet)]" /> Scheduled Reports
           </p>
-          <div className="space-y-2">
-            {[
-              { name: 'Weekly Creative Performance', freq: 'Every Monday, 8:00 AM' },
-              { name: 'Monthly Campaign Summary', freq: '1st of each month' },
-            ].map((r) => (
-              <div key={r.name} className="flex items-center justify-between rounded-lg border border-[var(--color-border)] px-3 py-2.5 text-xs">
-                <span>{r.name}</span>
-                <span className="text-[var(--color-text-secondary)] mono">{r.freq}</span>
-              </div>
-            ))}
-          </div>
+          <p className="text-xs text-[var(--color-text-secondary)]">
+            No reports are scheduled. Scheduling needs a delivery system (email or in-app) that isn't built yet.
+          </p>
         </Card>
       </div>
     </div>

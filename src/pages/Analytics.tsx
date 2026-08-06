@@ -6,6 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { Select, Input, Label } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { RoasTrendChart } from '@/components/dashboard/RoasTrendChart'
+import { SampleDataBanner } from '@/components/common/SampleDataBanner'
 import { formatCurrency } from '@/lib/utils'
 
 const breakdowns = ['Platform', 'Campaign', 'Ad Set', 'Creative', 'Audience', 'Placement', 'Device', 'Age', 'Gender', 'Country']
@@ -51,11 +52,17 @@ export function Analytics() {
         title="Analytics"
         description="Cross-platform performance, broken down however you need."
         actions={
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" disabled title="Requires real performance data">
             <Download size={13} /> Export
           </Button>
         }
       />
+
+      <SampleDataBanner tone="warning">
+        Every chart here is generated sample data, not your account. The spend-vs-ROAS scatter plot is randomized on
+        each page load, so the points change every refresh. The blended ROAS calculator below divides your input by a
+        placeholder spend figure of $97,300 — its answer is not meaningful.
+      </SampleDataBanner>
 
       <div className="p-6 md:p-8 space-y-6">
         <div className="flex flex-wrap items-center gap-2">

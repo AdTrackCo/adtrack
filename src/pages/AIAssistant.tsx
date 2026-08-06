@@ -4,6 +4,7 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
+import { SampleDataBanner } from '@/components/common/SampleDataBanner'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -49,7 +50,10 @@ function canned(prompt: string): string {
 
 export function AIAssistant() {
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'assistant', text: "Hi! I'm your AI Assistant. Ask me anything about your creatives, campaigns, or performance — or try one of the prompts below." },
+    {
+      role: 'assistant',
+      text: "Heads up before we start: I'm a preview, not a working AI. I'm not connected to a language model and I can't see your creatives, campaigns, or metrics. My replies are pre-written examples that match on keywords — treat every number in them as made up. This page shows what the assistant will do once it's connected for real.",
+    },
   ])
   const [input, setInput] = useState('')
   const [thinking, setThinking] = useState(false)
@@ -72,7 +76,12 @@ export function AIAssistant() {
 
   return (
     <div>
-      <PageHeader title="AI Assistant" description="Context-aware analysis across every creative, campaign, and ad set." />
+      <PageHeader title="AI Assistant" description="Preview of context-aware analysis across creatives, campaigns, and ad sets." />
+
+      <SampleDataBanner tone="warning">
+        This assistant is a demo. No AI model is connected and it cannot read your account — every response is
+        pre-written sample text, and all figures it quotes are invented. Don't act on anything it says.
+      </SampleDataBanner>
 
       <div className="p-6 md:p-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 flex flex-col rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] h-[calc(100vh-180px)]">
@@ -145,6 +154,7 @@ export function AIAssistant() {
           <Card>
             <CardHeader>
               <CardTitle>Weekly Insights</CardTitle>
+              <span className="text-[10px] text-[var(--color-warning)]">Sample</span>
             </CardHeader>
             <CardContent className="space-y-2.5">
               {insights.map((ins, i) => (

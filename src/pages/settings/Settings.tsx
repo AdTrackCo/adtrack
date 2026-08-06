@@ -1,15 +1,23 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { RefreshCw, Plus } from 'lucide-react'
+import { RefreshCw, Plus, Loader2 } from 'lucide-react'
 import { PageHeader } from '@/components/layout/PageHeader'
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
+import { Card } from '@/components/ui/Card'
 import { Input, Label, Select } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { useAuth } from '@/lib/AuthContext'
 import { platforms } from '@/lib/mockData'
 import { listIntegrations, startOAuth, disconnectPlatform, type Integration } from '@/lib/integrationsService'
+import {
+  getPreferences,
+  savePreferences,
+  updateFullName,
+  defaultNotificationSettings,
+  type MetricsPreference,
+  type NotificationSettings,
+} from '@/lib/preferencesService'
 import { cn } from '@/lib/utils'
 
 const tabs = ['Profile', 'Team', 'Notifications', 'Integrations', 'Brand Profiles', 'Billing'] as const
@@ -18,6 +26,41 @@ type Tab = (typeof tabs)[number]
 function ProfileTab() {
   const { user, signOut } = useAuth()
   const navigate = useNavigate()
+
+  const [fullName, setFullName] = useState('')
+  const [metricsPref, setMetricsPref] = useState<MetricsPreference>('ask')
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+
+  // Load the saved values so the form reflects what's actually stored.
+  useEffect(() => {
+    let cancelled = false
+    async function load() {
+      setFullName(((user?.user_metadata as any)?.full_name as string) || '')
+      const prefs = await getPreferences()
+      if (!cancelled) {
+        setMetricsPref(prefs.metricsPreference)
+        setLoading(false)
+      }
+    }
+    void load()
+    return () => {
+      cancelled = true
+    }
+  }, [user])
+
+  async function handleSave() {
+    setSaving(true)
+    try {
+      await updateFullName(fullName.trim())
+      await savePreferences({ metricsPreference: metricsPref })
+      toast.success('Profile saved ✓')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not save your profile.', { duration: 8000 })
+    } finally {
+      setSaving(false)
+    }
+  }
 
   async function handleSignOut() {
     await signOut()
@@ -30,25 +73,32 @@ function ProfileTab() {
         <div className="space-y-4">
           <div>
             <Label>Full Name</Label>
-            <Input defaultValue={(user?.user_metadata as any)?.full_name || ''} />
+            <Input value={fullName} onChange={(e) => setFullName(e.target.value)} disabled={loading} />
           </div>
           <div>
             <Label>Email</Label>
-            <Input defaultValue={user?.email || ''} disabled />
+            <Input value={user?.email || ''} disabled />
           </div>
           <div>
             <Label>Metrics Preference</Label>
             <Select
-              defaultValue={localStorage.getItem('adtrack_metrics_pref') || 'ask'}
-              onChange={(e) => localStorage.setItem('adtrack_metrics_pref', e.target.value)}
+              value={metricsPref}
+              onChange={(e) => setMetricsPref(e.target.value as MetricsPreference)}
+              disabled={loading}
             >
               <option value="manual">Manual Entry</option>
               <option value="sync">Platform Sync</option>
               <option value="ask">Ask every time</option>
             </Select>
           </div>
-          <Button variant="primary" onClick={() => toast.success('Profile updated ✓')}>
-            Save Changes
+          <Button variant="primary" onClick={() => void handleSave()} disabled={saving || loading}>
+            {saving ? (
+              <>
+                <Loader2 size={14} className="animate-spin" /> Saving…
+              </>
+            ) : (
+              'Save Changes'
+            )}
           </Button>
         </div>
       </Card>
@@ -118,23 +168,72 @@ function TeamTab() {
   )
 }
 
+const notificationItems: { key: keyof NotificationSettings; label: string }[] = [
+  { key: 'creativeFatigue', label: 'Creative fatigue alerts' },
+  { key: 'budgetOverrun', label: 'Budget overrun alerts' },
+  { key: 'adDisapproval', label: 'Ad disapproval notifications' },
+  { key: 'weeklyDigest', label: 'Weekly AI insights digest' },
+  { key: 'scheduledReports', label: 'Scheduled report delivery' },
+]
+
 function NotificationsTab() {
-  const items = [
-    'Creative fatigue alerts',
-    'Budget overrun alerts',
-    'Ad disapproval notifications',
-    'Weekly AI insights digest',
-    'Scheduled report delivery',
-  ]
+  const [settings, setSettings] = useState<NotificationSettings>(defaultNotificationSettings)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    void getPreferences().then((prefs) => {
+      if (!cancelled) {
+        setSettings(prefs.notificationSettings)
+        setLoading(false)
+      }
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  async function toggle(key: keyof NotificationSettings) {
+    const next = { ...settings, [key]: !settings[key] }
+    setSettings(next) // optimistic — revert below if the save fails
+    setSaving(true)
+    try {
+      await savePreferences({ notificationSettings: next })
+    } catch (err) {
+      setSettings(settings)
+      toast.error(err instanceof Error ? err.message : 'Could not save that setting.', { duration: 8000 })
+    } finally {
+      setSaving(false)
+    }
+  }
+
   return (
-    <Card className="max-w-lg divide-y divide-[var(--color-border)]">
-      {items.map((label) => (
-        <label key={label} className="flex items-center justify-between px-5 py-3.5 cursor-pointer">
-          <span className="text-sm">{label}</span>
-          <input type="checkbox" defaultChecked className="accent-[var(--color-violet)] h-4 w-4" />
-        </label>
-      ))}
-    </Card>
+    <div className="max-w-lg space-y-3">
+      <div className="rounded-lg border border-[var(--color-violet)]/30 bg-[var(--color-violet)]/5 px-4 py-3">
+        <p className="text-[11px] text-[var(--color-text-secondary)]">
+          These preferences save to your account, but no notifications are actually sent yet — there's no email or
+          in-app delivery system built. They'll take effect once alerting is wired up.
+        </p>
+      </div>
+      <Card className="divide-y divide-[var(--color-border)]">
+        {notificationItems.map(({ key, label }) => (
+          <label
+            key={key}
+            className={cn('flex items-center justify-between px-5 py-3.5', loading ? 'opacity-50' : 'cursor-pointer')}
+          >
+            <span className="text-sm">{label}</span>
+            <input
+              type="checkbox"
+              checked={settings[key]}
+              disabled={loading || saving}
+              onChange={() => void toggle(key)}
+              className="accent-[var(--color-violet)] h-4 w-4"
+            />
+          </label>
+        ))}
+      </Card>
+    </div>
   )
 }
 

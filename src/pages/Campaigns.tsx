@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { PlatformBadge } from '@/components/common/PlatformBadge'
 import { Badge } from '@/components/ui/Badge'
+import { SampleDataBanner } from '@/components/common/SampleDataBanner'
 import { generateCampaigns } from '@/lib/mockData'
 import { formatCurrency } from '@/lib/utils'
 
@@ -42,20 +43,25 @@ export function Campaigns() {
           <>
             {selected.size > 0 && (
               <>
-                <Button variant="secondary" size="sm">
+                <Button variant="secondary" size="sm" disabled title="Requires a connected ad platform">
                   <Pause size={13} /> Pause ({selected.size})
                 </Button>
-                <Button variant="secondary" size="sm">
+                <Button variant="secondary" size="sm" disabled title="Requires a connected ad platform">
                   <Copy size={13} /> Duplicate
                 </Button>
               </>
             )}
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" disabled title="Requires real campaign data">
               <Download size={13} /> Export
             </Button>
           </>
         }
       />
+
+      <SampleDataBanner>
+        These campaigns are placeholders, not your real ad accounts. Pause, Duplicate, and Export are disabled until a
+        platform is connected in Settings → Integrations.
+      </SampleDataBanner>
 
       <div className="p-6 md:p-8 space-y-3">
         {campaigns.map((c) => (
