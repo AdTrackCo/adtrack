@@ -11,6 +11,7 @@ import { formatCurrency } from '@/lib/utils'
 import { getComments, addComment, type Comment } from '@/lib/comments'
 import { useAuth } from '@/lib/AuthContext'
 import { useCreatives } from '@/lib/CreativesContext'
+import { EditCreativeDrawer } from '@/components/creatives/EditCreativeDrawer'
 import type { CreativeVariant } from '@/types'
 
 export function CreativeDetail() {
@@ -23,6 +24,7 @@ export function CreativeDetail() {
   const [activeVariant, setActiveVariant] = useState<CreativeVariant | undefined>(creative?.variants[0])
   const [comments, setComments] = useState<Comment[]>([])
   const [commentText, setCommentText] = useState('')
+  const [editOpen, setEditOpen] = useState(false)
 
   useEffect(() => {
     if (!creative) return
@@ -44,9 +46,13 @@ export function CreativeDetail() {
   async function submitComment() {
     if (!commentText.trim()) return
     const authorName = (user?.user_metadata as any)?.full_name || user?.email || 'You'
-    const c = await addComment(creative.id, authorName, commentText.trim())
-    setComments((prev) => [...prev, c])
-    setCommentText('')
+    try {
+      const c = await addComment(creative.id, authorName, commentText.trim())
+      setComments((prev) => [...prev, c])
+      setCommentText('')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not post comment.')
+    }
   }
 
   return (
@@ -99,7 +105,7 @@ export function CreativeDetail() {
               >
                 <Copy size={14} />
               </Button>
-              <Button variant="ghost" size="icon">
+              <Button variant="ghost" size="icon" onClick={() => setEditOpen(true)}>
                 <Pencil size={14} />
               </Button>
             </div>
@@ -174,7 +180,7 @@ export function CreativeDetail() {
           <Card>
             <CardHeader>
               <CardTitle>Performance Metrics</CardTitle>
-              <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="sm" onClick={() => toast('Manual metrics entry isn\'t wired up yet — coming with the sync layer.')}>
                 Edit Metrics
               </Button>
             </CardHeader>
@@ -229,7 +235,7 @@ export function CreativeDetail() {
           <Card>
             <CardHeader>
               <CardTitle>Ad Copy</CardTitle>
-              <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="sm" onClick={() => setEditOpen(true)}>
                 Edit Copy
               </Button>
             </CardHeader>
@@ -284,6 +290,8 @@ export function CreativeDetail() {
           </Card>
         </div>
       </div>
+
+      <EditCreativeDrawer creative={editOpen ? creative : null} onOpenChange={(open) => setEditOpen(open)} />
     </div>
   )
 }

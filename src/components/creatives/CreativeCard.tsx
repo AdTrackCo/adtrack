@@ -47,25 +47,11 @@ export function CreativeCard({ creative, onEdit }: { creative: CreativeSet; onEd
           </div>
         )}
 
-        <div className="absolute top-2 left-2">
-          <PlatformBadge platform={creative.platform} />
-        </div>
-        <div className="absolute top-2 right-2 flex items-center gap-1">
-          <StatusBadge status={creative.status} />
-          <div onClick={(e) => e.stopPropagation()}>
-            <CreativeActionMenu creative={creative} onEdit={onEdit}>
-              <button className="h-6 w-6 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white/80 hover:text-white">
-                <MoreVertical size={13} />
-              </button>
-            </CreativeActionMenu>
-          </div>
-        </div>
-        <div className="absolute bottom-2 right-2">
-          <span className="text-[10px] rounded-full bg-black/40 backdrop-blur-sm text-white px-2 py-0.5">{creative.format}</span>
-        </div>
-
+        {/* Hover overlay must sit BELOW the badges/menu in stacking order (z-10 vs
+            z-20) — it previously painted on top of them and silently absorbed
+            every click meant for the three-dot menu. */}
         {hover && (
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px] flex items-center justify-center gap-3 animate-slide-up">
+          <div className="absolute inset-0 z-10 bg-black/40 backdrop-blur-[1px] flex items-center justify-center gap-3 animate-slide-up">
             <button
               onClick={(e) => {
                 e.stopPropagation()
@@ -92,6 +78,23 @@ export function CreativeCard({ creative, onEdit }: { creative: CreativeSet; onEd
             </button>
           </div>
         )}
+
+        <div className="absolute top-2 left-2 z-20">
+          <PlatformBadge platform={creative.platform} />
+        </div>
+        <div className="absolute top-2 right-2 z-20 flex items-center gap-1">
+          <StatusBadge status={creative.status} />
+          <div onClick={(e) => e.stopPropagation()}>
+            <CreativeActionMenu creative={creative} onEdit={onEdit}>
+              <button className="h-6 w-6 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white/80 hover:text-white">
+                <MoreVertical size={13} />
+              </button>
+            </CreativeActionMenu>
+          </div>
+        </div>
+        <div className="absolute bottom-2 right-2 z-20">
+          <span className="text-[10px] rounded-full bg-black/40 backdrop-blur-sm text-white px-2 py-0.5">{creative.format}</span>
+        </div>
       </div>
 
       <div className="p-3">

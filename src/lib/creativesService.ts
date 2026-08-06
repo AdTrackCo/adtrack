@@ -254,6 +254,57 @@ export async function updateCreativeStatus(id: string, status: CreativeStatus): 
   if (error) throw new Error(error.message)
 }
 
+export interface EditableCreativeFields {
+  platform: Platform
+  format: string
+  funnelStage: string
+  angle: string
+  hookType: string
+  version: number
+  status: CreativeStatus
+  hookText: string
+  primaryText: string
+  headline: string
+  description: string
+  cta: string
+  notes: string
+  complianceScore: number
+}
+
+/**
+ * Updates a creative set's metadata/copy fields. Does NOT touch assets or
+ * size variants — swapping images isn't supported yet, only editing the
+ * details captured at upload time.
+ */
+export async function updateCreativeSet(id: string, name: string, fields: EditableCreativeFields): Promise<CreativeSet> {
+  const { error } = await supabase
+    .from('creative_sets')
+    .update({
+      name,
+      platform: fields.platform,
+      format: fields.format,
+      funnel_stage: fields.funnelStage,
+      angle: fields.angle,
+      hook_type: fields.hookType,
+      version: fields.version,
+      status: fields.status,
+      hook_text: fields.hookText,
+      primary_text: fields.primaryText,
+      headline: fields.headline,
+      description: fields.description,
+      cta: fields.cta,
+      notes: fields.notes,
+      compliance_score: fields.complianceScore,
+    })
+    .eq('id', id)
+
+  if (error) throw new Error(error.message)
+
+  const updated = await getCreativeSet(id)
+  if (!updated) throw new Error('Creative was updated but could not be loaded back.')
+  return updated
+}
+
 export async function deleteCreativeSet(id: string): Promise<void> {
   const { error } = await supabase.from('creative_sets').delete().eq('id', id)
   if (error) throw new Error(error.message)

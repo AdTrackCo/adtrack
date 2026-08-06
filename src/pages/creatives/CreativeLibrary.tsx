@@ -7,6 +7,7 @@ import { FilterBar, emptyFilters, type Filters } from '@/components/creatives/Fi
 import { CreativeCard } from '@/components/creatives/CreativeCard'
 import { CreativeActionMenu } from '@/components/creatives/CreativeActionMenu'
 import { UploadDrawer } from '@/components/creatives/UploadDrawer'
+import { EditCreativeDrawer } from '@/components/creatives/EditCreativeDrawer'
 import { PlatformBadge } from '@/components/common/PlatformBadge'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import { formatCurrency } from '@/lib/utils'
@@ -20,6 +21,7 @@ export function CreativeLibrary() {
   const [filters, setFilters] = useState<Filters>(emptyFilters)
   const [view, setView] = useState<'grid' | 'list'>('grid')
   const [uploadOpen, setUploadOpen] = useState(false)
+  const [editingCreative, setEditingCreative] = useState<CreativeSet | null>(null)
 
   const filtered = useMemo(() => {
     let list = allCreatives.filter((c) => {
@@ -90,7 +92,7 @@ export function CreativeLibrary() {
         {view === 'grid' ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {filtered.map((c) => (
-              <CreativeCard key={c.id} creative={c} onEdit={() => setUploadOpen(true)} />
+              <CreativeCard key={c.id} creative={c} onEdit={setEditingCreative} />
             ))}
           </div>
         ) : (
@@ -132,7 +134,7 @@ export function CreativeLibrary() {
                     <td className="px-4 py-3 mono text-xs text-right">{formatCurrency(c.spend)}</td>
                     <td className="px-4 py-3 text-xs text-right">{c.variants.length}</td>
                     <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                      <CreativeActionMenu creative={c as CreativeSet} onEdit={() => setUploadOpen(true)}>
+                      <CreativeActionMenu creative={c as CreativeSet} onEdit={setEditingCreative}>
                         <button className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">
                           <MoreVertical size={14} />
                         </button>
@@ -147,6 +149,7 @@ export function CreativeLibrary() {
       </div>
 
       <UploadDrawer open={uploadOpen} onOpenChange={setUploadOpen} />
+      <EditCreativeDrawer creative={editingCreative} onOpenChange={(open) => !open && setEditingCreative(null)} />
     </div>
   )
 }

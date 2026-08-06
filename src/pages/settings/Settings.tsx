@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { RefreshCw, Plus } from 'lucide-react'
 import { PageHeader } from '@/components/layout/PageHeader'
@@ -15,45 +16,74 @@ const tabs = ['Profile', 'Team', 'Notifications', 'Integrations', 'Brand Profile
 type Tab = (typeof tabs)[number]
 
 function ProfileTab() {
-  const { user } = useAuth()
+  const { user, signOut } = useAuth()
+  const navigate = useNavigate()
+
+  async function handleSignOut() {
+    await signOut()
+    navigate('/login')
+  }
+
   return (
-    <Card className="p-6 max-w-lg">
-      <div className="space-y-4">
-        <div>
-          <Label>Full Name</Label>
-          <Input defaultValue={(user?.user_metadata as any)?.full_name || ''} />
+    <div className="max-w-lg space-y-4">
+      <Card className="p-6">
+        <div className="space-y-4">
+          <div>
+            <Label>Full Name</Label>
+            <Input defaultValue={(user?.user_metadata as any)?.full_name || ''} />
+          </div>
+          <div>
+            <Label>Email</Label>
+            <Input defaultValue={user?.email || ''} disabled />
+          </div>
+          <div>
+            <Label>Metrics Preference</Label>
+            <Select
+              defaultValue={localStorage.getItem('adtrack_metrics_pref') || 'ask'}
+              onChange={(e) => localStorage.setItem('adtrack_metrics_pref', e.target.value)}
+            >
+              <option value="manual">Manual Entry</option>
+              <option value="sync">Platform Sync</option>
+              <option value="ask">Ask every time</option>
+            </Select>
+          </div>
+          <Button variant="primary" onClick={() => toast.success('Profile updated ✓')}>
+            Save Changes
+          </Button>
         </div>
+      </Card>
+
+      <Card className="p-6 flex items-center justify-between">
         <div>
-          <Label>Email</Label>
-          <Input defaultValue={user?.email || ''} disabled />
+          <p className="text-sm font-medium">Sign Out</p>
+          <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">Log out of AdTrack on this device.</p>
         </div>
-        <div>
-          <Label>Metrics Preference</Label>
-          <Select
-            defaultValue={localStorage.getItem('adtrack_metrics_pref') || 'ask'}
-            onChange={(e) => localStorage.setItem('adtrack_metrics_pref', e.target.value)}
-          >
-            <option value="manual">Manual Entry</option>
-            <option value="sync">Platform Sync</option>
-            <option value="ask">Ask every time</option>
-          </Select>
-        </div>
-        <Button variant="primary" onClick={() => toast.success('Profile updated ✓')}>
-          Save Changes
+        <Button variant="outline" onClick={() => void handleSignOut()}>
+          Sign Out
         </Button>
-      </div>
-    </Card>
+      </Card>
+    </div>
   )
 }
 
 function TeamTab() {
+  const { user } = useAuth()
   const [email, setEmail] = useState('')
-  const members = [
-    { name: 'Ibarra', email: 'Ibarra.Company@icloud.com', role: 'Admin' },
-    { name: 'Jordan Lee', email: 'jordan@brand.com', role: 'Editor' },
-  ]
+  const you = {
+    name: (user?.user_metadata as any)?.full_name || user?.email || 'You',
+    email: user?.email || '',
+    role: 'Admin',
+  }
+
   return (
     <div className="max-w-2xl space-y-4">
+      <div className="rounded-lg border border-[var(--color-violet)]/30 bg-[var(--color-violet)]/5 px-4 py-3">
+        <p className="text-[11px] text-[var(--color-text-secondary)]">
+          Team invites aren't wired to a real system yet — there's no email sent and no invited account gets access. This
+          needs a <span className="mono text-[var(--color-text-primary)]">team_members</span> table, an invite email flow, and
+          role-based access checks before it's real.
+        </p>
+      </div>
       <Card className="p-5">
         <p className="text-sm font-medium mb-3">Invite a Team Member</p>
         <div className="flex gap-2">
@@ -64,10 +94,10 @@ function TeamTab() {
             <option>Admin</option>
           </Select>
           <Button
-            variant="primary"
+            variant="secondary"
             onClick={() => {
               if (!email) return
-              toast.success(`Invite sent to ${email} ✓`)
+              toast('Invites aren\'t wired to a real backend yet — nothing was sent.')
               setEmail('')
             }}
           >
@@ -76,15 +106,13 @@ function TeamTab() {
         </div>
       </Card>
       <Card className="divide-y divide-[var(--color-border)]">
-        {members.map((m) => (
-          <div key={m.email} className="flex items-center justify-between px-5 py-3">
-            <div>
-              <p className="text-sm">{m.name}</p>
-              <p className="text-xs text-[var(--color-text-secondary)]">{m.email}</p>
-            </div>
-            <Badge tone="violet">{m.role}</Badge>
+        <div className="flex items-center justify-between px-5 py-3">
+          <div>
+            <p className="text-sm">{you.name}</p>
+            <p className="text-xs text-[var(--color-text-secondary)]">{you.email}</p>
           </div>
-        ))}
+          <Badge tone="violet">{you.role}</Badge>
+        </div>
       </Card>
     </div>
   )
@@ -229,52 +257,31 @@ function IntegrationsTab() {
 }
 
 function BrandProfilesTab() {
-  const brands = [
-    { name: 'Primary Brand', color: '#7C5CFC' },
-    { name: 'Sub-Brand — Wellness Line', color: '#2AFFD3' },
-  ]
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl">
-      {brands.map((b) => (
-        <Card key={b.name} className="p-5">
-          <div className="flex items-center gap-3 mb-3">
-            <span className="h-8 w-8 rounded-full" style={{ background: b.color }} />
-            <p className="text-sm font-medium">{b.name}</p>
-          </div>
-          <p className="text-[11px] text-[var(--color-text-secondary)]">Voice guidelines and compliance rules configured.</p>
-        </Card>
-      ))}
-      <button className="rounded-xl border border-dashed border-[var(--color-border)] flex items-center justify-center py-8 text-xs text-[var(--color-text-secondary)] hover:border-[var(--color-violet)] transition-base">
-        <Plus size={14} className="mr-1.5" /> Add Brand Profile
-      </button>
+    <div className="max-w-2xl">
+      <Card className="p-8 text-center">
+        <p className="text-sm font-medium mb-1">No brand profiles yet</p>
+        <p className="text-xs text-[var(--color-text-secondary)] mb-4 max-w-sm mx-auto">
+          Multi-brand support needs a <span className="mono">brands</span> table wired up (the schema already exists in
+          the migration) — this is UI-only until that's connected.
+        </p>
+        <Button variant="outline" size="sm" onClick={() => toast('Brand profiles aren\'t wired to the database yet.')}>
+          <Plus size={13} /> Add Brand Profile
+        </Button>
+      </Card>
     </div>
   )
 }
 
 function BillingTab() {
   return (
-    <div className="max-w-lg space-y-4">
-      <Card className="p-5">
-        <div className="flex items-center justify-between mb-1">
-          <p className="text-sm font-medium">Current Plan</p>
-          <Badge tone="violet">Growth — $299/mo</Badge>
-        </div>
-        <p className="text-xs text-[var(--color-text-secondary)]">Renews August 15, 2026</p>
-      </Card>
-      <Card className="p-5">
-        <p className="text-sm font-medium mb-2">Payment Method</p>
-        <p className="text-xs text-[var(--color-text-secondary)] mono">Visa •••• 4242</p>
-      </Card>
-      <Card className="p-5">
-        <p className="text-sm font-medium mb-3">Invoice History</p>
-        <div className="space-y-2">
-          {['Jul 2026', 'Jun 2026', 'May 2026'].map((m) => (
-            <div key={m} className="flex items-center justify-between text-xs">
-              <span className="text-[var(--color-text-secondary)]">{m}</span>
-              <span className="mono">$299.00</span>
-            </div>
-          ))}
-        </div>
+    <div className="max-w-lg">
+      <Card className="p-8 text-center">
+        <p className="text-sm font-medium mb-1">Billing isn't set up yet</p>
+        <p className="text-xs text-[var(--color-text-secondary)] max-w-sm mx-auto">
+          AdTrack isn't charging anyone yet, so there's no real plan, payment method, or invoice history to show. Once
+          Stripe is connected, your subscription details will appear here for real.
+        </p>
       </Card>
     </div>
   )
